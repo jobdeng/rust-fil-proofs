@@ -5,7 +5,7 @@ authors = ["dignifiedquire <me@dignifiedquire.com>"]
 license = "MIT OR Apache-2.0"
 description = "Proofs of Space Time"
 edition = "2018"
-repository = "https://github.com/filecoin-project/rust-fil-proofs"
+repository = "https://github.com/jobdeng/rust-fil-proofs.git"
 readme = "README.md"
 
 [dependencies]
@@ -21,7 +21,7 @@ serde = { version = "1.0", features = ["derive"]}
 blake2b_simd = "0.5"
 blake2s_simd = "0.5"
 ff = "0.11.0"
-bellperson = "0.18.0"
+bellperson = { git = "https://github.com/jobdeng/bellperson.git", branch = "job/v0.18.0" }
 log = "0.4.7"
 hex = "0.4.0"
 generic-array = "0.14.4"

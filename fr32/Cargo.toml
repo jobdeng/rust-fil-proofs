@@ -5,11 +5,11 @@ authors = ["dignifiedquire <me@dignifiedquire.com>"]
 description = "Filecoin proofs Fr/32-byte conversion tooling"
 license = "MIT OR Apache-2.0"
 edition = "2018"
-repository = "https://github.com/filecoin-project/rust-fil-proofs"
+repository = "https://github.com/jobdeng/rust-fil-proofs.git"
 
 [dependencies]
 anyhow = "1.0.23"
-bellperson = "0.18.0"
+bellperson = { git = "https://github.com/jobdeng/bellperson.git", branch = "job/v0.18.0" }
 byte-slice-cast = "1.0.0"
 byteorder = "1"
 ff = "0.11.0"

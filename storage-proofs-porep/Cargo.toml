@@ -5,7 +5,7 @@ authors = ["dignifiedquire <me@dignifiedquire.com>"]
 description = "Proofs of replication"
 license = "MIT OR Apache-2.0"
 edition = "2018"
-repository = "https://github.com/filecoin-project/rust-fil-proofs"
+repository = "https://github.com/jobdeng/rust-fil-proofs.git"
 readme = "README.md"
 
 [dependencies]
@@ -23,7 +23,7 @@ rayon = "1.0.0"
 serde = { version = "1.0", features = ["derive"]}
 serde_json = "1.0"
 ff = "0.11.0"
-bellperson = "0.18.0"
+bellperson = { git = "https://github.com/jobdeng/bellperson.git", branch = "job/v0.18.0" }
 log = "0.4.7"
 pretty_assertions = "0.6.1"
 generic-array = "0.14.4"
