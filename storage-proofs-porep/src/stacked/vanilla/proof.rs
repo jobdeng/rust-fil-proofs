@@ -1304,6 +1304,9 @@ impl<'a, Tree: 'static + MerkleTreeTrait, G: 'static + Hasher> StackedDrg<'a, Tr
         };
         info!("tree_c done");
 
+        //@job@
+        // TODO use the merkle tree which is already mapped to memory.
+
         // Build the MerkleTree over the original data (if needed).
         let tree_d = match data_tree {
             Some(t) => {

@@ -421,3 +421,16 @@ fn prev_power_of_two(mut x: u32) -> u32 {
     x |= x >> 16;
     x - (x >> 1)
 }
+
+#[test]
+fn test_zero_comm_d() {
+    let sector_size = SectorSize(34359738368); //SectorSize(34091302912);
+    let piece = PieceInfo {commitment: [0;32], size: UnpaddedBytesAmount(34091302912)};
+    let pieces = [piece];
+
+    let res = compute_comm_d(sector_size, &pieces);
+    match res {
+        Ok(comm_d) => print!("comm_d: {:?}", comm_d),
+        Err(err) => println!("error: {}", err)
+    }
+}

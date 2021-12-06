@@ -5,7 +5,7 @@ authors = ["dignifiedquire <me@dignifiedquire.com>"]
 description = "Core parts for proofs of storage"
 license = "MIT OR Apache-2.0"
 edition = "2018"
-repository = "https://github.com/jobdeng/rust-fil-proofs.git"
+repository = "https://github.com/filecoin-project/rust-fil-proofs"
 readme = "README.md"
 
 [lib]
@@ -13,6 +13,7 @@ bench = false
 
 [dependencies]
 filecoin-hashers = { path = "../filecoin-hashers", version = "^5.0.0", default-features = false, features = ["sha256", "poseidon"] }
+fr32 = { path = "../fr32", version = "^3.0.0"}
 rand = "0.8"
 merkletree = "0.21.0"
 byteorder = "1"
@@ -31,7 +32,7 @@ blake2b_simd = "0.5"
 blake2s_simd = "0.5"
 toml = "0.5"
 ff = "0.11.0"
-bellperson = { git = "https://github.com/jobdeng/bellperson.git", branch = "job/v0.18.0" }
+bellperson = "0.18.0"
 serde_json = "1.0"
 log = "0.4.7"
 rand_chacha = "0.3"
@@ -44,7 +45,6 @@ cpu-time = { version = "1.0", optional = true }
 gperftools = { version = "0.2", optional = true }
 num_cpus = "1.10.1"
 semver = "0.11.0"
-fr32 = { path = "../fr32", version = "^3.0.0"}
 pairing = "0.21"
 blstrs = "0.4.0"
 
@@ -91,3 +91,8 @@ harness = false
 [[bench]]
 name = "misc"
 harness = false
+
+
+# patch dependencies
+[patch.crates-io]
+bellperson = { git = "https://github.com/jobdeng/bellperson", branch = "job/v0.18.0" }

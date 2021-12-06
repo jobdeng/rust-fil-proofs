@@ -5,7 +5,7 @@ authors = ["dignifiedquire <me@dignifiedquire.com>"]
 description = "Proofs of replication"
 license = "MIT OR Apache-2.0"
 edition = "2018"
-repository = "https://github.com/jobdeng/rust-fil-proofs.git"
+repository = "https://github.com/filecoin-project/rust-fil-proofs"
 readme = "README.md"
 
 [dependencies]
@@ -14,6 +14,7 @@ digest = "0.9"
 storage-proofs-core = { path = "../storage-proofs-core", version = "^10.0.0", default-features = false}
 sha2raw = { path = "../sha2raw", version = "^5.0.0"}
 filecoin-hashers = { path = "../filecoin-hashers", version = "^5.0.0", default-features = false, features = ["poseidon", "sha256"]}
+fr32 = { path = "../fr32", version = "^3.0.0", default-features = false }
 rand = "0.8"
 merkletree = "0.21.0"
 mapr = "0.8.0"
@@ -23,7 +24,7 @@ rayon = "1.0.0"
 serde = { version = "1.0", features = ["derive"]}
 serde_json = "1.0"
 ff = "0.11.0"
-bellperson = { git = "https://github.com/jobdeng/bellperson.git", branch = "job/v0.18.0" }
+bellperson = "0.18.0"
 log = "0.4.7"
 pretty_assertions = "0.6.1"
 generic-array = "0.14.4"
@@ -38,7 +39,6 @@ byte-slice-cast = "1.0.0"
 hwloc = { version = "0.3.0", optional = true }
 libc = "0.2"
 fdlimit = "0.2.0"
-fr32 = { path = "../fr32", version = "^3.0.0", default-features = false }
 yastl = "0.1.2"
 fil_logger = "0.1"
 pairing = "0.21"
@@ -71,3 +71,8 @@ harness = false
 [[bench]]
 name = "parents"
 harness = false
+
+
+# patch dependencies
+[patch.crates-io]
+bellperson = { git = "https://github.com/jobdeng/bellperson", branch = "job/v0.18.0" }
