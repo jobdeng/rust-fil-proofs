@@ -50,26 +50,28 @@ use crate::{
     },
 };
 
-// static template_merkle_tree: Arc<Mutex<dyn MerkleTreeTrait>> = Arc::new(Mutex::new(nullptr));
-// fn load_template_merkle_tree<Tree: 'static + MerkleTreeTrait>(porep_config: &PoRepConfig) -> Result<Tree> {
-//     let template_store = ({
-//         match std::env::var::<String>(String::from("TEMPLATE_STORE")) {
-//             Ok(val) => Ok(val),
-//             Err(err) => Err(Error::new(err)),
-//         }
-//     })?;
-//     let sector_size = porep_config.sector_size; //SectorSize(u64::from(34359738368));
-//     let base_tree_size = get_base_tree_size::<DefaultBinaryTree>(sector_size)?;
-//     let base_tree_leafs = get_base_tree_leafs::<DefaultBinaryTree>(base_tree_size)?;
-//     let mut merkle_tree_path = path::PathBuf::from(template_store);
-//     merkle_tree_path.push("unsealed");
-//     let mut config = StoreConfig::new(
-//         merkle_tree_path,
-//         CacheKey::CommDTree.to_string(),
-//         default_rows_to_discard(base_tree_leafs, BINARY_ARITY),
-//     );
-//     MerkleTree:
-// }
+/*
+static template_merkle_tree: Arc<Mutex<dyn MerkleTreeTrait>> = Arc::new(Mutex::new(nullptr));
+fn load_template_merkle_tree<Tree: 'static + MerkleTreeTrait>(porep_config: &PoRepConfig) -> Result<Tree> {
+    let template_store = ({
+        match std::env::var::<String>(String::from("TEMPLATE_STORE")) {
+            Ok(val) => Ok(val),
+            Err(err) => Err(Error::new(err)),
+        }
+    })?;
+    let sector_size = porep_config.sector_size; //SectorSize(u64::from(34359738368));
+    let base_tree_size = get_base_tree_size::<DefaultBinaryTree>(sector_size)?;
+    let base_tree_leafs = get_base_tree_leafs::<DefaultBinaryTree>(base_tree_size)?;
+    let mut merkle_tree_path = path::PathBuf::from(template_store);
+    merkle_tree_path.push("unsealed");
+    let mut config = StoreConfig::new(
+        merkle_tree_path,
+        CacheKey::CommDTree.to_string(),
+        default_rows_to_discard(base_tree_leafs, BINARY_ARITY),
+    );
+    MerkleTree:
+}
+*/
 
 #[allow(clippy::too_many_arguments)]
 pub fn seal_pre_commit_phase1<R, S, T, Tree: 'static + MerkleTreeTrait>(
@@ -87,7 +89,8 @@ where
     S: AsRef<Path>,
     T: AsRef<Path>,
 {
-    info!("seal_pre_commit_phase1:start: - sector: {:?}, cache_path: {:?}, in_path: {:?}, out_path: {:?}, partitions: {:?}, porep_id: {:?}", sector_id, cache_path.as_ref().as_os_str(), in_path.as_ref().as_os_str(), out_path.as_ref().as_os_str(), porep_config.partitions, std::str::from_utf8(&porep_config.porep_id[0 .. ]));
+    info!("seal_pre_commit_phase1:start:\n    sector: {:?},\n    cache_path: {:?},\n    in_path: {:?},\n    out_path: {:?},\n    partitions: {:?},\n    porep_id: {:?},\n    prover_id: {:?},\n    ticket: {:?}", 
+    sector_id, cache_path.as_ref().as_os_str(), in_path.as_ref().as_os_str(), out_path.as_ref().as_os_str(), porep_config.partitions, std::str::from_utf8(&porep_config.porep_id[0 .. ]), std::str::from_utf8(&prover_id[0 ..]), std::str::from_utf8(&ticket[0..]));
 
     // Sanity check all input path types.
     ensure!(
@@ -207,20 +210,23 @@ where
     let (config, comm_d) = {
         let base_tree_size = get_base_tree_size::<DefaultBinaryTree>(porep_config.sector_size)?;
         let base_tree_leafs = get_base_tree_leafs::<DefaultBinaryTree>(base_tree_size)?;
-        let mut config = StoreConfig::new(
+        let config = StoreConfig::new(
             cache_path.as_ref(),
             CacheKey::CommDTree.to_string(),
             default_rows_to_discard(base_tree_leafs, BINARY_ARITY)
         );
+        let comm_d = compute_comm_d(porep_config.sector_size, piece_infos)?;
+        info!("seal_pre_commit_phase1:comm_d:: - sector: {:?}, base_tree_size: {}, base_tree_leafs: {}, comm_d: {:?}", sector_id, base_tree_size, base_tree_leafs, std::str::from_utf8(&comm_d[0 ..]));
         (config, comm_d)
-    }
+    };
 
+/*
     trace!("verifying pieces");
-
     ensure!(
         verify_pieces(&comm_d, piece_infos, porep_config.into())?,
         "pieces and comm_d do not match"
     );
+*/
 
     let replica_id = generate_replica_id::<Tree::Hasher, _>(
         &prover_id,
