@@ -307,12 +307,12 @@ impl ParentCache {
         H: Hasher,
         G: Graph<H> + ParameterSetMetadata + Send + Sync,
     {
-        info!("parent cache: generating {}", path.display());
         let mut digest_hex: String = "".to_string();
         let sector_size = graph.size() * NODE_SIZE;
 
         with_exclusive_lock(&path.to_path_buf(), |file| {
             let cache_size = cache_entries as usize * NODE_BYTES * DEGREE;
+            info!("cache:generate:start - path: {}, sector_size: {}, cache_size: {}", path.display(), sector_size, cache_size);
             file.as_ref()
                 .set_len(cache_size as u64)
                 .with_context(|| format!("failed to set length: {}", cache_size))?;

@@ -29,6 +29,7 @@ use storage_proofs_core::{
         create_disk_tree, create_lc_tree, get_base_tree_count, split_config,
         split_config_and_replica, BinaryMerkleTree, DiskTree, LCTree, MerkleProofTrait, MerkleTree,
         MerkleTreeTrait,
+        BinaryMemoryTree
     },
     settings::SETTINGS,
     util::{default_rows_to_discard, NODE_SIZE},
@@ -401,13 +402,13 @@ impl<'a, Tree: 'static + MerkleTreeTrait, G: 'static + Hasher> StackedDrg<'a, Tr
     fn build_binary_tree<K: Hasher>(
         tree_data: &[u8],
         config: StoreConfig,
-    ) -> Result<BinaryMerkleTree<K>> {
+    ) -> Result<BinaryMemoryTree<K>> {//Result<BinaryMerkleTree<K>>
         trace!("building tree (size: {})", tree_data.len());
 
         let leafs = tree_data.len() / NODE_SIZE;
         assert_eq!(tree_data.len() % NODE_SIZE, 0);
 
-        let tree = MerkleTree::from_par_iter_with_config(
+        let tree = BinaryMemoryTree::from_par_iter_with_config( //MerkleTree::from_par_iter_with_config(
             (0..leafs)
                 .into_par_iter()
                 // TODO: proper error handling instead of `unwrap()`
@@ -1162,7 +1163,7 @@ impl<'a, Tree: 'static + MerkleTreeTrait, G: 'static + Hasher> StackedDrg<'a, Tr
         layer_challenges: &LayerChallenges,
         replica_id: &<Tree::Hasher as Hasher>::Domain,
         data: Data<'_>,
-        data_tree: Option<BinaryMerkleTree<G>>,
+        //data_tree: Option<&BinaryMemoryTree<G>>,//Option<BinaryMerkleTree<G>>,
         config: StoreConfig,
         replica_path: PathBuf,
     ) -> Result<TransformedLayers<Tree, G>> {
@@ -1177,7 +1178,7 @@ impl<'a, Tree: 'static + MerkleTreeTrait, G: 'static + Hasher> StackedDrg<'a, Tr
             graph,
             layer_challenges,
             data,
-            data_tree,
+            //data_tree,
             config,
             replica_path,
             labels,
@@ -1189,7 +1190,7 @@ impl<'a, Tree: 'static + MerkleTreeTrait, G: 'static + Hasher> StackedDrg<'a, Tr
         graph: &StackedBucketGraph<Tree::Hasher>,
         layer_challenges: &LayerChallenges,
         mut data: Data<'_>,
-        data_tree: Option<BinaryMerkleTree<G>>,
+        //data_tree: Option<&BinaryMemoryTree<G>>, //Option<BinaryMerkleTree<G>>,
         config: StoreConfig,
         replica_path: PathBuf,
         label_configs: Labels<Tree>,
@@ -1306,7 +1307,7 @@ impl<'a, Tree: 'static + MerkleTreeTrait, G: 'static + Hasher> StackedDrg<'a, Tr
 
         //@job@
         // TODO use the merkle tree which is already mapped to memory.
-
+/*
         // Build the MerkleTree over the original data (if needed).
         let tree_d = match data_tree {
             Some(t) => {
@@ -1318,7 +1319,7 @@ impl<'a, Tree: 'static + MerkleTreeTrait, G: 'static + Hasher> StackedDrg<'a, Tr
             None => {
                 trace!("building merkle tree for the original data");
                 data.ensure_data()?;
-                measure_op(Operation::CommD, || {
+                &measure_op(Operation::CommD, || {
                     Self::build_binary_tree::<G>(data.as_ref(), tree_d_config.clone())
                 })?
             }
@@ -1330,6 +1331,8 @@ impl<'a, Tree: 'static + MerkleTreeTrait, G: 'static + Hasher> StackedDrg<'a, Tr
         );
         let tree_d_root = tree_d.root();
         drop(tree_d);
+*/
+        let tree_len = get_merkle_tree_len(leafs: usize, branches: usize)
 
         // Encode original data into the last layer.
         info!("building tree_r_last");
@@ -1396,7 +1399,7 @@ impl<'a, Tree: 'static + MerkleTreeTrait, G: 'static + Hasher> StackedDrg<'a, Tr
         pp: &'a PublicParams<Tree>,
         label_configs: Labels<Tree>,
         data: Data<'a>,
-        data_tree: BinaryMerkleTree<G>,
+        //data_tree: &BinaryMemoryTree<G>, //BinaryMerkleTree<G>,
         config: StoreConfig,
         replica_path: PathBuf,
     ) -> Result<(
@@ -1409,7 +1412,7 @@ impl<'a, Tree: 'static + MerkleTreeTrait, G: 'static + Hasher> StackedDrg<'a, Tr
             &pp.graph,
             &pp.layer_challenges,
             data,
-            Some(data_tree),
+            //Some(data_tree),
             config,
             replica_path,
             label_configs,

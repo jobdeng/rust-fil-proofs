@@ -85,3 +85,4 @@ harness = false
 # patch dependencies
 [patch.crates-io]
 bellperson = { git = "https://github.com/jobdeng/bellperson", branch = "job/v0.18.0" }
+merkletree = { git = "https://github.com/jobdeng/merkletree", branch = "job/v0.21.0"}

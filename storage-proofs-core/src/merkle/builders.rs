@@ -1,13 +1,13 @@
-use std::any::Any;
+use std::{any::Any, fs::OpenOptions};
 use std::fs::File;
 use std::io::Write;
 use std::mem::size_of;
-use std::path::PathBuf;
 
-use anyhow::ensure;
+use anyhow::{ensure, Context, anyhow};
 use filecoin_hashers::{Domain, Hasher, PoseidonArity};
 use generic_array::typenum::{Unsigned, U0};
-use log::trace;
+use log::{info, trace};
+use memmap::MmapOptions;
 use merkletree::{
     merkle::{
         get_merkle_tree_leafs, is_merkle_tree_size_valid, FromIndexedParallelIterator, MerkleTree,
@@ -21,7 +21,179 @@ use crate::{
     error::{Error, Result},
     merkle::{DiskTree, LCMerkleTree, LCStore, LCTree, MerkleTreeTrait, MerkleTreeWrapper},
     util::{data_at_node, default_rows_to_discard, NODE_SIZE},
+    cache_key::CacheKey,
+    settings,
 };
+
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::sync::{Mutex};
+use filecoin_hashers::sha256::Sha256Hasher;
+use super::BinaryMemoryTree;
+use blstrs::Scalar as Fr;
+use fr32::{fr_into_bytes};
+
+use lazy_static::lazy_static;
+
+pub struct MerkleTemplate {
+    file_path: Option<PathBuf>,
+    base_tree_size: usize,
+    base_tree_leafs: usize,
+    tree_len: usize,
+    comm_d: Option<[u8;32]>,
+    merkle_tree: Option<BinaryMemoryTree<Sha256Hasher>>
+}
+lazy_static! {
+    static ref MERKLE_TEMPLATE: Mutex<MerkleTemplate> = Mutex::new(MerkleTemplate {
+        file_path: None,
+        base_tree_size: 0,
+        base_tree_leafs: 0,
+        tree_len: 0,
+        comm_d: None,
+        merkle_tree: None
+    });//TODO HashMap<String,MerkleTemplate> ...
+}
+// initialize the merkle tree template for further actions, e.g. load the merkle tree.
+pub fn init_merkle_template<F: Fn(&mut MerkleTemplate)->Result<()> + 'static>(func: F) -> Result<bool> {
+    info!("init_merkle_template");
+    let mut temp = MERKLE_TEMPLATE.lock().expect("init_merkle_template: failed to lock MERKLE_TEMPLATE");
+    if temp.file_path.is_some() && temp.base_tree_size > 0 && temp.base_tree_leafs > 0 {
+        return Ok(false);
+    }
+    let mt = &mut *temp;
+    let res = match func(mt) {
+        Ok(()) => Ok(true),
+        Err(err) => Err(err)
+    };
+    info!("merkle_template - base_tree_size: {}, base_tree_leafs: {}, tree_len: {}, file_path: {:?}", mt.base_tree_size, mt.base_tree_leafs, mt.tree_len, &mt.file_path);
+    res
+}
+pub fn get_merkle_tree_len() -> Result<usize> {
+    let mut temp = MERKLE_TEMPLATE.lock().expect("get_merkl_tree_len: failed to lock MERKLE_TEMPLATE");
+    if temp.tree_len > 0 {
+        Ok(temp.tree_len)
+    } else {
+        match load_binary_tree(&mut temp) {
+            Err(err) => Err(err),
+            Ok(_) => {
+                Ok(temp.tree_len)
+            }
+        }
+    }
+}
+pub fn get_merkle_comm_d() -> Result<[u8;32]> {
+    let mut temp = MERKLE_TEMPLATE.lock().expect("get_merkle_comm_d: failed to lock MERKLE_TEMPLATE");
+    match temp.comm_d {
+        Some(c) => Ok(c),
+        None => {
+            match load_binary_tree(&mut temp) {
+                Err(err) => Err(err),
+                Ok(_) => {
+                    ensure!(
+                        temp.comm_d.is_some(),
+                        format!("get_merkle_comm_d: none")
+                    );
+                    Ok(temp.comm_d.unwrap())
+                }
+            }
+        }
+    }
+}
+pub fn with_merkle_tree<F: Fn(&BinaryMemoryTree<Sha256Hasher>)->Result<()> + 'static>(func: F) -> Result<()> {
+    info!("with_merkle_tree");
+    load_merkle_tree()?;
+    let temp = &*MERKLE_TEMPLATE.lock().unwrap();
+    let tree = temp.merkle_tree.as_ref().unwrap();
+    func(tree)
+}
+// load the merklet tree in template store to memory.
+//fn load_merkle_tree() -> Result<&'static BinaryMemoryTree<Sha256Hasher>> {
+pub fn load_merkle_tree() -> Result<bool> {
+    info!("load_merkle_tree");
+    let mut temp = MERKLE_TEMPLATE.lock().expect("load_merkle_tree: failed to lock MERKLE_TEMPLE");
+    if temp.merkle_tree.is_some() {
+        return Ok(false);
+    }
+    ensure!(
+        temp.file_path.is_some() && temp.base_tree_size > 0 && temp.base_tree_leafs > 0,
+        format!("merkle tree template is not initialized")
+    );
+    load_binary_tree(&mut temp)
+}
+fn load_binary_tree(temp: &mut MerkleTemplate) -> Result<bool> {
+    if temp.merkle_tree.is_some() {
+        return Ok(false)
+    }
+    let path = temp.file_path.as_ref().expect("load_binary_tree: no file path");
+    let fhdl = OpenOptions::new().read(true).open(path).with_context(||format!("cannot read template merkle: {:?}", path))?;
+    let fdat = unsafe {
+        MmapOptions::new().map(&fhdl).with_context(||format!("cannot mmap template merkle: {:?}", path))
+    }?;
+    let flen = fdat.len();
+    match BinaryMemoryTree::<Sha256Hasher>::from_tree_slice(&fdat[0..flen], temp.base_tree_leafs) {
+        Err(err) => Err(err),
+        Ok(tree) => {
+            temp.merkle_tree = Some(tree);//@job@ TODO drop the tree to release memory!
+            let tree = temp.merkle_tree.as_ref().unwrap();
+            temp.tree_len = tree.len();
+            let root: Fr = tree.root().into();
+            let comm_d = calc_comm_d(&root);
+            temp.comm_d = Some(comm_d);
+            info!("load_binary_tree - tree_len: {}, commd: {:?}", temp.tree_len, std::str::from_utf8(temp.comm_d.as_ref().unwrap()));
+            Ok(true)
+        }
+    }
+}
+fn calc_comm_d(fr: &Fr) -> [u8;32] {
+    let mut comm_d = [0; 32];
+    for (i, b) in fr_into_bytes(&fr).iter().enumerate() {
+        comm_d[i] = *b;
+    }
+    comm_d
+}
+// link the sector merklet tree to the one in template store. 
+pub fn link_merkle_tree<P: AsRef<Path>>(dir: P) -> Result<PathBuf> {
+    let dst = StoreConfig::data_path(&dir.as_ref().to_path_buf(), CacheKey::CommDTree.to_string().as_str());
+    if dst.exists() {
+        match fs::symlink_metadata(dst.as_path()) {
+            Ok(meta) => {
+                if meta.file_type().is_symlink() || meta.len() > 0 {
+                    info!("link_merkle_tree - symlink '{:?}' already exists", dst.as_os_str());
+                    return Ok(dst);
+                }
+                info!("link_merkle_tree - '{:?} is an empty symlink, remove it", dst.as_os_str());
+                fs::remove_file(dst.as_path())?
+            },
+            Err(_) => {
+                info!("link_merkle_tree - '{:?} is not a symlink, remove it", dst.as_os_str());
+                fs::remove_file(dst.as_path())?
+            }
+        }
+    }
+    let src = settings::template_merkle();
+    ensure!(src.exists(),format!("merkle tree template file [{:?}] does not exist", src.as_os_str()));
+    match std::os::unix::fs::symlink(src.clone(), dst.clone()) {
+        Ok(()) => {
+            info!("link_merkle_tree - ok - src: {:?}, dst: {:?}", src.as_os_str(), dst.as_os_str());
+            Ok(dst)
+        },
+        Err(err) => {
+            info!("link_merkle_tree - failed - src: {:?}, dst: {:?}, error: {:?}", src.as_os_str(), dst.as_os_str(), &err);
+            Err(anyhow::Error::from(err))
+        }
+    }
+}
+/*
+fn drop_merkle_tree() -> Result<()> {
+    let mut temp = MERKLE_TEMPLATE.lock().unwrap();
+    if temp.merkle_tree.is_some() {
+        // let obj = temp.merkle_tree.unwrap();
+        // drop(obj);
+        temp.merkle_tree = None;
+    }
+    Ok(())
+}
+*/
 
 // Create a DiskTree from the provided config(s), each representing a 'base' layer tree with 'base_tree_len' elements.
 pub fn create_disk_tree<Tree: MerkleTreeTrait>(

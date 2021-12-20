@@ -3,6 +3,7 @@ use std::env;
 use config::{Config, ConfigError, Environment, File};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
+use std::path::{PathBuf};
 
 lazy_static! {
     pub static ref SETTINGS: Settings = Settings::new().expect("invalid configuration");
@@ -30,6 +31,7 @@ pub struct Settings {
     pub multicore_sdr_producers: usize,
     pub multicore_sdr_producer_stride: u64,
     pub multicore_sdr_lookahead: usize,
+    pub template_store: String
 }
 
 impl Default for Settings {
@@ -54,6 +56,7 @@ impl Default for Settings {
             multicore_sdr_producers: 3,
             multicore_sdr_producer_stride: 128,
             multicore_sdr_lookahead: 800,
+            template_store: "/mnt/md0/lotus/worker/templates".to_string(),
         }
     }
 }
@@ -86,6 +89,17 @@ fn set_gpu_framework() {
         set_env_var_if_unset("BELLMAN_GPU_FRAMEWORK", &framework);
         set_env_var_if_unset("NEPTUNE_GPU_FRAMEWORK", &framework);
     }
+}
+
+pub fn template_store() -> PathBuf {
+    PathBuf::from(SETTINGS.template_store.as_str())
+}
+pub fn template_unsealed() -> PathBuf {
+    template_store().join("unsealed")
+
+}
+pub fn template_merkle() -> PathBuf {
+    template_store().join("merkle")
 }
 
 impl Settings {

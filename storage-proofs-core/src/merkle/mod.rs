@@ -6,7 +6,7 @@ pub use merkletree::store::{DiskStore, ExternalReader, Store};
 
 use filecoin_hashers::Hasher;
 use generic_array::typenum::{U0, U2, U4, U8};
-use merkletree::store::LevelCacheStore;
+use merkletree::store::{LevelCacheStore, VecStore};
 
 mod builders;
 mod proof;
@@ -41,3 +41,8 @@ pub type OctTopMerkleTree<H> = DiskTree<H, U8, U8, U2>;
 pub type OctLCMerkleTree<H> = LCTree<H, U8, U0, U0>;
 pub type OctLCSubMerkleTree<H> = LCTree<H, U8, U2, U0>;
 pub type OctLCTopMerkleTree<H> = LCTree<H, U8, U8, U2>;
+
+pub type MemoryStore<E> = VecStore<E>;
+pub type MemoryTree<H, U, V, W> = MerkleTreeWrapper<H, MemoryStore<<H as Hasher>::Domain>, U, V, W>;
+pub type BinaryMemoryTree<H> = MemoryTree<H, U2, U0, U0>;
+

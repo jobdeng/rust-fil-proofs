@@ -94,7 +94,7 @@ impl IncrementingCursor {
 
 impl<T: FromByteSlice> CacheReader<T> {
     pub fn new(filename: &Path, window_size: Option<usize>, degree: usize) -> Result<Self> {
-        info!("initializing cache");
+        info!("memory_handling:CacheReader:new - filename: {}, window_size: {:?}, degree: {}", filename.as_os_str(), window_size, degree);
         let file = File::open(filename)?;
         let size = File::metadata(&file)?.len() as usize;
         let window_size = match window_size {

@@ -20,6 +20,8 @@ use crate::{
     PoRepID,
 };
 
+use log::info;
+
 pub const PARALLEL_MERKLE: bool = true;
 
 /// The base degree used for all DRG graphs. One degree from this value is used to ensure that a
@@ -248,6 +250,7 @@ pub fn derive_drg_seed(porep_id: PoRepID) -> [u8; 28] {
     let mut drg_seed = [0; 28];
     let raw_seed = derive_porep_domain_seed(DRSAMPLE_DST, porep_id);
     drg_seed.copy_from_slice(&raw_seed[..28]);
+    info!("derive_drg_seed - porep_id: {:?}, drg_seed: {:?}", std::str::from_utf8(&porep_id).unwrap(), std::str::from_utf8(&drg_seed).unwrap());
     drg_seed
 }
 

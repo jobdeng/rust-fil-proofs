@@ -150,7 +150,7 @@ fn create_label_runner(
     ring_buf: &RingBuf,
     base_parent_missing: &UnsafeSlice<'_, BitMask>,
 ) {
-    info!("created label runner");
+    info!("create_label_runner - num_nodes: {}, stride: {}, lookahead: {}", num_nodes, stride, lookahead);
     // Label data bytes per node
     loop {
         // Get next work items
@@ -209,7 +209,7 @@ fn create_layer_labels(
     cur_layer: u32,
     core_group: Arc<Option<MutexGuard<'_, Vec<CoreIndex>>>>,
 ) {
-    info!("Creating labels for layer {}", cur_layer);
+    info!("create_layer_labels:start - replica_id: {:?}, cur_layer: {}, num_nodes: {}", std::str::from_utf8(replica_id), cur_layer, num_nodes);
     // num_producers is the number of producer threads
     let (lookahead, num_producers, producer_stride) = {
         let settings = &SETTINGS;
@@ -269,7 +269,7 @@ fn create_layer_labels(
             runners.push(s.spawn(move |_| {
                 // This could fail, but we will ignore the error if so.
                 // It will be logged as a warning by `bind_core`.
-                debug!("binding core in producer thread {}", i);
+                debug!("create_layer_labels:spwan - layer: {}, producer: {}", cur_layer, i);
                 // When `_cleanup_handle` is dropped, the previous binding of thread will be restored.
                 let _cleanup_handle = core_index.map(|c| bind_core(*c));
 
@@ -442,7 +442,7 @@ pub fn create_labels_for_encoding<Tree: 'static + MerkleTreeTrait, T: AsRef<[u8]
     replica_id: T,
     config: StoreConfig,
 ) -> Result<(Labels<Tree>, Vec<LayerState>)> {
-    info!("create labels");
+    info!("create_labels_for_encoding - layers: {}, replica_id: {:?}, config: {:?}", layers, std::str::from_utf8(replica_id.as_ref()).unwrap(), config);
 
     let layer_states = prepare_layers::<Tree>(graph, &config, layers);
 
@@ -451,6 +451,9 @@ pub fn create_labels_for_encoding<Tree: 'static + MerkleTreeTrait, T: AsRef<[u8]
     let cache_window_nodes = SETTINGS.sdr_parents_cache_size as usize;
 
     let default_cache_size = DEGREE * 4 * cache_window_nodes;
+
+    info!("create_labels_for_encoding - replica_id: {:?}, layers: {}, node_count: {}, sector_size: {}, cache_window_nodes: {}, default_cache_size: {}",
+          std::str::from_utf8(replica_id.as_ref()).unwrap(), layers, node_count, sector_size, cache_window_nodes, default_cache_size);
 
     let core_group = Arc::new(checkout_core_group());
 
@@ -471,7 +474,7 @@ pub fn create_labels_for_encoding<Tree: 'static + MerkleTreeTrait, T: AsRef<[u8]
     )?;
 
     for (layer, layer_state) in (1..=layers).zip(layer_states.iter()) {
-        info!("Layer {}", layer);
+        info!("create_labels_for_encoding - layer {}", layer);
 
         if layer_state.generated {
             info!("skipping layer {}, already generated", layer);
@@ -510,14 +513,9 @@ pub fn create_labels_for_encoding<Tree: 'static + MerkleTreeTrait, T: AsRef<[u8]
         mem::swap(&mut layer_labels, &mut exp_labels);
         {
             let layer_config = &layer_state.config;
-
-            info!("  storing labels on disk");
+            info!("create_labels_for_encoding:write_layer:start - layer: {}, id: {}", layer, layer_config.id);
             write_layer(&exp_labels, layer_config).context("failed to store labels")?;
-
-            info!(
-                "  generated layer {} store with id {}",
-                layer, layer_config.id
-            );
+            info!("create_labels_for_encoding:write_layer:end -  layer: {}, id: {}", layer, layer_config.id);
         }
     }
 
