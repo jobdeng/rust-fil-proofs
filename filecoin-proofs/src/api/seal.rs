@@ -68,8 +68,8 @@ where
     S: AsRef<Path>,
     T: AsRef<Path>,
 {
-    info!("seal_pre_commit_phase1:start - sector: {:?}\n    cache_path: {:?}\n    in_path: {:?}\n    out_path: {:?}\n    partitions: {:?}\n    porep_id: {:?}\n    prover_id: {:?}\n    ticket: {:?}", 
-    sector_id, cache_path.as_ref().as_os_str(), in_path.as_ref().as_os_str(), out_path.as_ref().as_os_str(), porep_config.partitions, std::str::from_utf8(&porep_config.porep_id[0 .. ]), std::str::from_utf8(&prover_id[0 ..]), std::str::from_utf8(&ticket[0..]));
+    info!("seal_pre_commit_phase1:start - sector: {:?}, cache_path: {:?}, in_path: {:?}, out_path: {:?},  partitions: {:?}, porep_id: {:X?}, prover_id: {:X?}, ticket: {:X?}", 
+    sector_id, cache_path.as_ref().as_os_str(), in_path.as_ref().as_os_str(), out_path.as_ref().as_os_str(), porep_config.partitions, &porep_config.porep_id, &prover_id, &ticket);
 
     info!("seal_pre_commit_phase1:compound:start - sector: {:?}", sector_id);
     let compound_setup_params = compound_proof::SetupParams {
@@ -114,7 +114,7 @@ where
             Ok(())
         })?;
         let comm_d = get_merkle_comm_d()?; //compute_comm_d(porep_config.sector_size, piece_infos)?;
-        info!("seal_pre_commit_phase1:comm_d - sector: {:?}, base_tree_size: {}, base_tree_leafs: {}, branches: {}, comm_d: {:?}", sector_id, base_tree_size, base_tree_leafs, BINARY_ARITY, std::str::from_utf8(&comm_d[0 ..]));
+        info!("seal_pre_commit_phase1:comm_d - sector: {:?}, base_tree_size: {}, base_tree_leafs: {}, branches: {}, comm_d: {:X?}", sector_id, base_tree_size, base_tree_leafs, BINARY_ARITY, &comm_d);
         (config, comm_d)
     };
     info!("seal_pre_commit_phase1:commd:end - sector: {:?}", sector_id);
@@ -175,7 +175,7 @@ where
         ..
     } = phase1_output;
 
-    info!("seal_pre_commit_phase2:args - config_path: {:?}, config_id: {:?}, cache_path: {:?}, replica_path: {:?}, commd_d: {:?}", config.path, config.id, cache_path.as_ref(), replica_path.as_ref(), std::str::from_utf8(&comm_d[0..]));
+    info!("seal_pre_commit_phase2:args - config_path: {:?}, config_id: {:?}, cache_path: {:?}, replica_path: {:?}, commd_d: {:X?}", config.path, config.id, cache_path.as_ref(), replica_path.as_ref(), &comm_d);
 
     labels.update_root(cache_path.as_ref());
     config.path = cache_path.as_ref().into();

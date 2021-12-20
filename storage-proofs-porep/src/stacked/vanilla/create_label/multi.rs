@@ -209,7 +209,7 @@ fn create_layer_labels(
     cur_layer: u32,
     core_group: Arc<Option<MutexGuard<'_, Vec<CoreIndex>>>>,
 ) {
-    info!("create_layer_labels:start - replica_id: {:?}, cur_layer: {}, num_nodes: {}", std::str::from_utf8(replica_id), cur_layer, num_nodes);
+    info!("create_layer_labels:start - replica_id: {:X?}, cur_layer: {}, num_nodes: {}", replica_id, cur_layer, num_nodes);
     // num_producers is the number of producer threads
     let (lookahead, num_producers, producer_stride) = {
         let settings = &SETTINGS;
@@ -442,7 +442,7 @@ pub fn create_labels_for_encoding<Tree: 'static + MerkleTreeTrait, T: AsRef<[u8]
     replica_id: T,
     config: StoreConfig,
 ) -> Result<(Labels<Tree>, Vec<LayerState>)> {
-    info!("create_labels_for_encoding - layers: {}, replica_id: {:?}, config: {:?}", layers, std::str::from_utf8(replica_id.as_ref()).unwrap(), config);
+    info!("create_labels_for_encoding - layers: {}, replica_id: {:X?}, config: {:?}", layers, replica_id.as_ref(), config);
 
     let layer_states = prepare_layers::<Tree>(graph, &config, layers);
 
@@ -452,8 +452,8 @@ pub fn create_labels_for_encoding<Tree: 'static + MerkleTreeTrait, T: AsRef<[u8]
 
     let default_cache_size = DEGREE * 4 * cache_window_nodes;
 
-    info!("create_labels_for_encoding - replica_id: {:?}, layers: {}, node_count: {}, sector_size: {}, cache_window_nodes: {}, default_cache_size: {}",
-          std::str::from_utf8(replica_id.as_ref()).unwrap(), layers, node_count, sector_size, cache_window_nodes, default_cache_size);
+    info!("create_labels_for_encoding - replica_id: {:X?}, layers: {}, node_count: {}, sector_size: {}, cache_window_nodes: {}, default_cache_size: {}",
+          replica_id.as_ref(), layers, node_count, sector_size, cache_window_nodes, default_cache_size);
 
     let core_group = Arc::new(checkout_core_group());
 

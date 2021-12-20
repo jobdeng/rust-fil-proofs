@@ -250,7 +250,7 @@ pub fn derive_drg_seed(porep_id: PoRepID) -> [u8; 28] {
     let mut drg_seed = [0; 28];
     let raw_seed = derive_porep_domain_seed(DRSAMPLE_DST, porep_id);
     drg_seed.copy_from_slice(&raw_seed[..28]);
-    info!("derive_drg_seed - porep_id: {:?}, drg_seed: {:?}", std::str::from_utf8(&porep_id).unwrap(), std::str::from_utf8(&drg_seed).unwrap());
+    info!("derive_drg_seed - porep_id: {:X?}, drg_seed: {:X?}", &porep_id, &drg_seed);
     drg_seed
 }
 

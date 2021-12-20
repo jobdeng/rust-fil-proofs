@@ -139,7 +139,7 @@ fn load_binary_tree(temp: &mut MerkleTemplate) -> Result<bool> {
             let root: Fr = tree.root().into();
             let comm_d = calc_comm_d(&root);
             temp.comm_d = Some(comm_d);
-            info!("load_binary_tree - tree_len: {}, commd: {:?}", temp.tree_len, std::str::from_utf8(temp.comm_d.as_ref().unwrap()));
+            info!("load_binary_tree - tree_len: {}, commd: {:X?}", temp.tree_len, temp.comm_d.as_ref().unwrap());
             Ok(true)
         }
     }
