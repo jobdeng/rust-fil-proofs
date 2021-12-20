@@ -101,7 +101,7 @@ where
         config.size = match get_merkle_tree_len(base_tree_leafs, BINARY_ARITY) {
             Ok(size) => Some(size),
             Err(err) => {
-                info!("seal_pre_commit_phase1::geet_merkle_tree_len - base_tree_leafs: {}, branches: {}, error: {:?}", base_tree_leafs, BINARY_ARITY, err);
+                info!("seal_pre_commit_phase1:geet_merkle_tree_len - base_tree_leafs: {}, branches: {}, error: {:?}", base_tree_leafs, BINARY_ARITY, err);
                 None
             }
         };
@@ -114,7 +114,7 @@ where
             Ok(())
         })?;
         let comm_d = get_merkle_comm_d()?; //compute_comm_d(porep_config.sector_size, piece_infos)?;
-        info!("seal_pre_commit_phase1:comm_d:: - sector: {:?}, base_tree_size: {}, base_tree_leafs: {}, branches: {}, comm_d: {:?}", sector_id, base_tree_size, base_tree_leafs, BINARY_ARITY, std::str::from_utf8(&comm_d[0 ..]));
+        info!("seal_pre_commit_phase1:comm_d - sector: {:?}, base_tree_size: {}, base_tree_leafs: {}, branches: {}, comm_d: {:?}", sector_id, base_tree_size, base_tree_leafs, BINARY_ARITY, std::str::from_utf8(&comm_d[0 ..]));
         (config, comm_d)
     };
     info!("seal_pre_commit_phase1:commd:end - sector: {:?}", sector_id);
